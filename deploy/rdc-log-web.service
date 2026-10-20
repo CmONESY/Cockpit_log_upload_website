@@ -1,0 +1,15 @@
+[Unit]
+Description=驾舱日志上报控制台 (rdc log web)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/桌面/web_trigger
+ExecStart=/usr/bin/python3 app.py
+Restart=always
+RestartSec=3
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

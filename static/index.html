@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>驾舱日志上报控制台</title>
+<style>
+  :root {
+    --line: #e3e6ea; --text: #1f2329; --muted: #6b7280; --bg: #f6f7f9;
+    --blue: #2563eb; --green: #16a34a; --red: #dc2626; --amber: #d97706;
+    --grey: #9ca3af;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+  header { padding: 18px 24px 10px; }
+  h1 { margin: 0 0 6px; font-size: 20px; }
+  .hint { color: var(--muted); font-size: 12.5px; }
+  .toolbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center;
+             gap: 10px; flex-wrap: wrap; padding: 12px 24px; background: #fff;
+             border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  button { font: inherit; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--line);
+           background: #fff; color: var(--text); cursor: pointer; }
+  button:hover { border-color: #c9ced6; }
+  button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  button.primary:disabled { background: var(--grey); border-color: var(--grey); cursor: default; }
+  .sep { width: 1px; height: 20px; background: var(--line); }
+  .summary { margin-left: auto; color: var(--muted); }
+  .summary b { color: var(--text); }
+  main { padding: 16px 24px 48px; }
+  .site { background: #fff; border: 1px solid var(--line); border-radius: 10px;
+          margin-bottom: 16px; overflow: hidden; }
+  .site-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+               background: #fafbfc; border-bottom: 1px solid var(--line); }
+  .site-head h2 { margin: 0; font-size: 15px; }
+  .site-head .meta { color: var(--muted); font-size: 12.5px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid #f1f2f4;
+           vertical-align: middle; }
+  th { font-weight: 600; color: var(--muted); font-size: 12.5px; background: #fff; }
+  tr:last-child td { border-bottom: none; }
+  .name { font-weight: 600; }
+  .id { color: var(--muted); font-size: 12px; font-family: ui-monospace, Consolas, monospace; }
+  .host { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: #374151; }
+  .badge { display: inline-block; min-width: 62px; text-align: center; padding: 2px 8px;
+           border-radius: 999px; font-size: 12px; color: #fff; background: var(--grey); }
+  .badge.connecting, .badge.running { background: var(--blue); }
+  .badge.done { background: var(--green); }
+  .badge.failed { background: var(--red); }
+  .badge.unknown { background: var(--amber); }
+  .badge.idle { background: var(--grey); }
+  .bar { position: relative; height: 8px; width: 150px; background: #eceef1; border-radius: 4px;
+         overflow: hidden; }
+  .bar > i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--blue);
+             transition: width .25s ease; }
+  .bar.done > i { background: var(--green); }
+  .bar.failed > i { background: var(--red); }
+  .pct { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12.5px; }
+  .detail { color: var(--muted); font-size: 12.5px; }
+  .key { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: #374151;
+         cursor: pointer; word-break: break-all; }
+  .key:hover { color: var(--blue); }
+  .elapsed { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+         margin-right: 6px; background: var(--grey); }
+  .dot.ok { background: var(--green); }
+  .dot.bad { background: var(--red); }
+  .dot.mid { background: var(--amber); }
+  .dot.off { background: #c0c4cc; }
+  .dot.wait { background: #c0c4cc; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+  .vpn-badge { padding: 2px 9px; border-radius: 999px; font-size: 12px;
+               border: 1px solid transparent; }
+  .vpn-badge.ok { color: #15803d; background: #ecfdf3; border-color: #bbf7d0; }
+  .vpn-badge.off { color: #6b7280; background: #f3f4f6; border-color: #e5e7eb; }
+  tr.row-off td { opacity: .55; }
+  .health-hint { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+  .audit { margin: 0 24px 48px; background: #fff; border: 1px solid var(--line);
+           border-radius: 10px; overflow: hidden; }
+  .audit-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+                background: #fafbfc; border-bottom: 1px solid var(--line); }
+  .audit-head h3 { margin: 0; font-size: 14px; }
+  .audit-head .meta { color: var(--muted); font-size: 12.5px; }
+  .audit-head button { margin-left: auto; padding: 4px 10px; font-size: 12.5px; }
+  .audit table { font-size: 12.5px; }
+  .audit th, .audit td { padding: 7px 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>驾舱日志上报控制台</h1>
+  <div class="hint">
+    点「触发上报」会让驾舱立刻打包并上传<b>当天</b>的日志到京东云 OSS。
+    接口只回报进度、不回报成功与否，所以结论按观测到的阶段推断，最终以 OSS 上的对象为准。
+  </div>
+</header>
+
+<div class="toolbar">
+  <button id="btn-upload" class="primary">触发上报（选中 <span id="sel-count">0</span> 台）</button>
+  <button id="btn-status">刷新状态</button>
+  <span class="sep"></span>
+  <button id="btn-all">全选</button>
+  <button id="btn-none">全不选</button>
+  <span class="summary" id="summary"></span>
+</div>
+
+<main id="sites"></main>
+
+<section class="audit">
+  <div class="audit-head">
+    <h3>最近操作</h3>
+    <span class="meta" id="whoami"></span>
+    <a class="meta" href="/logout" style="text-decoration:none">退出</a>
+    <button id="btn-audit">刷新</button>
+  </div>
+  <table id="audit-table">
+    <thead><tr><th>时间</th><th>用户</th><th>类型</th><th>驾舱</th><th>结果</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<script>
+// 直接双击 index.html 打开时没有后端，所有接口都会失败——提前说清楚
+if (location.protocol === "file:") {
+  const tip = document.createElement("div");
+  tip.style.cssText = "margin:16px 24px;padding:12px 16px;border:1px solid #fca5a5;" +
+    "background:#fef2f2;color:#991b1b;border-radius:8px;font-size:13px;line-height:1.6";
+  tip.innerHTML = "你现在是用 <b>file://</b> 直接打开了页面文件，这样连不到后端，" +
+    "所以驾舱列表是空的。<br>请改用网站地址访问，例如 " +
+    "<b>http://127.0.0.1:8080/</b> 或 <b>http://&lt;服务器IP&gt;:8080/</b>。";
+  document.body.prepend(tip);
+}
+
+const PHASE = { idle: "空闲", collecting: "扫描日志", zipping: "打包 ZIP",
+                uploading: "上传 OSS", finishing: "收尾", "": "—" };
+const KIND = { "manual-today": "手动-当日", "scheduled-yesterday": "定时-昨日" };
+const STATE = { queued: "排队中", connecting: "连接中", running: "进行中",
+                done: "已完成", failed: "失败" };
+
+let cockpits = [];
+let sites = [];
+let selected = new Set();
+let es = null;
+let currentBatch = null;
+
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function mib(n) { return (Number(n || 0) / 1048576).toFixed(1); }
+
+async function load() {
+  const res = await fetch("/api/cockpits");
+  const data = await res.json();
+  cockpits = data.cockpits;
+  sites = data.sites;
+  render();
+}
+
+function render() {
+  const root = document.getElementById("sites");
+  root.innerHTML = "";
+  const bySite = new Map();
+  cockpits.forEach(c => {
+    if (!bySite.has(c.site)) bySite.set(c.site, []);
+    bySite.get(c.site).push(c);
+  });
+  sites.forEach(site => {
+    const list = bySite.get(site.id) || [];
+    const box = el("section", "site");
+    const head = el("div", "site-head");
+    const cb = el("input"); cb.type = "checkbox"; cb.dataset.site = site.id;
+    cb.onchange = () => {
+      list.forEach(c => cb.checked ? selected.add(c.id) : selected.delete(c.id));
+      document.querySelectorAll("input[data-cockpit]").forEach(x => {
+        if (list.some(c => c.id === x.dataset.cockpit)) x.checked = cb.checked;
+      });
+      updateSelCount();
+    };
+    head.append(cb, el("h2", null, site.name || site.id),
+                el("span", "meta", (site.region ? "region " + site.region + " · " : "") +
+                                    list.length + " 台" +
+                                    (list.length ? " · " + (list[0].site_name || "") : "")));
+    const vpnBadge = el("span", "vpn-badge off", "VPN 检测中…");
+    vpnBadge.dataset.siteVpn = site.id;
+    head.append(vpnBadge);
+    const table = el("table");
+    const thead = el("thead");
+    const tr = el("tr");
+    ["", "驾舱", "主机", "设备", "状态", "进度", "详情 / OSS 对象", "耗时"].forEach(h =>
+      tr.append(el("th", null, h)));
+    thead.append(tr);
+    const tbody = el("tbody");
+    if (!list.length) {
+      const row = el("tr");
+      const td = el("td", "detail",
+        "这个矿区还没有配置驾舱，在 webapp/cockpits.json 里加上 IP 即可");
+      td.colSpan = 8;
+      row.append(td);
+      tbody.append(row);
+    }
+    list.forEach(c => {
+      const row = el("tr"); row.id = "row-" + c.id;
+      const tdSel = el("td");
+      const box2 = el("input"); box2.type = "checkbox"; box2.dataset.cockpit = c.id;
+      box2.onchange = () => { box2.checked ? selected.add(c.id) : selected.delete(c.id);
+                              updateSelCount(); };
+      tdSel.append(box2);
+      const tdName = el("td");
+      tdName.append(el("div", "name", c.name), el("div", "id", c.id));
+      const tdHost = el("td");
+      tdHost.append(el("div", "host", c.host + ":" + c.ipc_port),
+                    el("div", "id", c.transport));
+      const tdHealth = el("td");
+      tdHealth.append(el("span", "dot wait"), el("span", null, "检测中…"));
+      const tdState = el("td"); tdState.append(el("span", "badge idle", "—"));
+      const tdBar = el("td");
+      const bar = el("div", "bar"); bar.append(el("i"));
+      tdBar.append(bar, el("div", "pct", "—"));
+      const tdDetail = el("td"); tdDetail.append(el("div", "detail", c.note || ""));
+      const tdTime = el("td"); tdTime.append(el("span", "elapsed", "—"));
+      row.dataset.site = c.site;
+      row.dataset.transport = c.transport;
+      row.append(tdSel, tdName, tdHost, tdHealth, tdState, tdBar, tdDetail, tdTime);
+      tbody.append(row);
+    });
+    table.append(thead, tbody);
+    box.append(head, table);
+    root.append(box);
+  });
+  updateSelCount();
+}
+
+function updateSelCount() {
+  document.getElementById("sel-count").textContent = selected.size;
+  document.getElementById("btn-upload").disabled = selected.size === 0;
+}
+
+let health = { sites: {}, cockpits: {} };
+
+function applyHealth() {
+  document.querySelectorAll("[data-site-vpn]").forEach(node => {
+    const info = health.sites[node.dataset.siteVpn];
+    if (!info) {
+      node.className = "vpn-badge off";
+      node.textContent = "VPN 检测中…";
+      return;
+    }
+    if (info.up) {
+      node.className = "vpn-badge ok";
+      node.textContent = "VPN 已挂载" + (info.iface ? " · " + info.iface : "");
+    } else {
+      node.className = "vpn-badge off";
+      node.textContent = "VPN 未挂载";
+    }
+    node.title = info.detail || "";
+  });
+
+  document.querySelectorAll("tr[data-site]").forEach(row => {
+    const id = row.id.replace("row-", "");
+    const site = health.sites[row.dataset.site] || {};
+    const c = health.cockpits[id] || {};
+    const cell = row.children[3];
+    let cls = "wait", text = "检测中…", hint = "";
+    const needsVpn = row.dataset.transport !== "tcp";
+    if (needsVpn && !site.up) {
+      cls = "off"; text = "VPN 未挂载"; hint = site.detail || "";
+    } else if (c.ssh === "ok" && c.ipc === "ok") {
+      cls = "ok"; text = "在线";
+    } else if (c.ssh === "ok" && c.ipc === "fail") {
+      cls = "bad"; text = "服务异常"; hint = c.ipc_message || "";
+    } else if (c.ssh === "fail") {
+      cls = "bad"; text = "SSH 不可达"; hint = c.ssh_error || "";
+    } else if (c.ssh === "ok") {
+      cls = "mid"; text = "端口可达";
+    }
+    cell.innerHTML = "";
+    cell.append(el("span", "dot " + cls), el("span", null, text));
+    if (hint) cell.append(el("div", "health-hint", hint.slice(0, 90)));
+
+    const off = needsVpn && !site.up;
+    row.classList.toggle("row-off", off);
+    const box = row.querySelector("input[data-cockpit]");
+    if (box) {
+      box.disabled = off;
+      if (off && box.checked) { box.checked = false; selected.delete(id); }
+    }
+  });
+
+  document.querySelectorAll("input[data-site]").forEach(box => {
+    const info = health.sites[box.dataset.site] || {};
+    box.disabled = !info.up;
+  });
+  updateSelCount();
+}
+
+async function loadHealth() {
+  try {
+    const res = await fetch("/api/health");
+    health = await res.json();
+    applyHealth();
+  } catch (err) { /* 下一轮再试 */ }
+}
+
+async function loadAudit() {
+  try {
+    const res = await fetch("/api/audit?limit=30");
+    const data = await res.json();
+    const tbody = document.querySelector("#audit-table tbody");
+    tbody.innerHTML = "";
+    (data.items || []).forEach(item => {
+      const tr = document.createElement("tr");
+      const kind = item.event === "batch"
+        ? (item.action === "status" ? "查询" : "触发")
+        : "结果";
+      const target = item.cockpits ? item.cockpits.join(", ") : (item.cockpit_id || "");
+      const result = item.event === "batch"
+        ? "—"
+        : ((item.state || "") + (item.verdict ? " · " + item.verdict : ""));
+      [ (item.ts || "").replace("T", " "), item.user || "", kind, target, result ]
+        .forEach(text => { const td = document.createElement("td"); td.textContent = text; tr.append(td); });
+      tbody.append(tr);
+    });
+  } catch (err) { /* 忽略 */ }
+}
+
+async function loadWho() {
+  try {
+    const res = await fetch("/api/me");
+    const data = await res.json();
+    document.getElementById("whoami").textContent = "当前用户：" + data.user;
+  } catch (err) { /* 忽略 */ }
+}
+
+document.getElementById("btn-audit").onclick = loadAudit;
+
+function applySnapshot(snap) {
+  snap.jobs.forEach(job => {
+    const row = document.getElementById("row-" + job.cockpit_id);
+    if (!row) return;
+    const badge = row.querySelector(".badge");
+    let cls = job.state;
+    if (job.state === "done" && job.verdict === "unknown") cls = "unknown";
+    badge.className = "badge " + cls;
+    badge.textContent = STATE[job.state] || job.state;
+    if (job.verdict === "success") { badge.textContent = "已完成·已确认"; }
+    if (job.verdict === "unknown") { badge.textContent = "已完成·待核实"; }
+    if (job.state === "failed") { badge.textContent = "失败"; }
+
+    const bar = row.querySelector(".bar");
+    const fill = bar.querySelector("i");
+    let pct = Number(job.percent || 0);
+    if (job.state === "done" && job.verdict === "success") pct = 100;
+    fill.style.width = Math.max(0, Math.min(100, pct)) + "%";
+    bar.className = "bar" + (job.state === "done" ? " done" : "") +
+                    (job.state === "failed" ? " failed" : "");
+    row.querySelector(".pct").textContent = PHASE[job.phase] !== undefined
+      ? (PHASE[job.phase] + " " + pct + "%") : (pct + "%");
+
+    const detail = row.querySelector(".detail");
+    detail.innerHTML = "";
+    if (job.message) detail.append(el("div", null, job.message));
+    if (job.object_key) {
+      const key = el("div", "key", job.object_key);
+      key.title = "点击复制";
+      key.onclick = () => navigator.clipboard.writeText(job.object_key);
+      detail.append(key);
+    }
+    if (job.last_upload) {
+      const rec = job.last_upload;
+      const when = (rec.uploaded_at || "").replace("T", " ");
+      detail.append(el("div", "health-hint",
+        "最近成功：" + when + " · " + mib(rec.size_bytes) + " MiB · " +
+        (KIND[rec.kind] || rec.kind || "")));
+    }
+    row.querySelector(".elapsed").textContent =
+      job.elapsed ? job.elapsed.toFixed(0) + "s" : (job.state === "queued" ? "—" : "·");
+  });
+  const c = snap.counts;
+  document.getElementById("summary").innerHTML =
+    "共 <b>" + c.total + "</b> 台 · 完成 <b>" + c.done + "</b> · 失败 <b>" +
+    c.failed + "</b> · 进行中 <b>" + c.running + "</b>";
+}
+
+function startBatch(action, ids) {
+  if (!ids || ids.length === 0) return;
+  if (es) { es.close(); es = null; }
+  fetch("/api/batches", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cockpit_ids: ids, action: action })
+  }).then(r => r.json()).then(res => {
+    if (!res.batch_id) { alert("触发失败：" + JSON.stringify(res)); return; }
+    currentBatch = res.batch_id;
+    attachBatch(res.batch_id);
+  }).catch(err => alert("请求失败：" + err));
+}
+
+function attachBatch(batchId) {
+  if (es) { es.close(); es = null; }
+  es = new EventSource("/api/batches/" + batchId + "/events");
+  es.onmessage = ev => {
+    const snap = JSON.parse(ev.data);
+    applySnapshot(snap);
+    if (snap.all_done) { es.close(); es = null; }
+  };
+  es.onerror = () => { /* 断线自动重连；任务状态在后端 */ };
+}
+
+async function reattach() {
+  try {
+    const res = await fetch("/api/latest");
+    const data = await res.json();
+    if (!data.batch || !data.snapshot) return;
+    applySnapshot(data.snapshot);
+    if (!data.snapshot.all_done) attachBatch(data.batch);
+  } catch (err) { /* 忽略 */ }
+}
+
+document.getElementById("btn-upload").onclick = () =>
+  startBatch("upload", Array.from(selected));
+document.getElementById("btn-status").onclick = () => {
+  // 没勾选就刷全部；勾了就只刷选中的
+  const ids = selected.size ? Array.from(selected) : cockpits.map(c => c.id);
+  startBatch("status", ids);
+};
+document.getElementById("btn-all").onclick = () => {
+  cockpits.forEach(c => selected.add(c.id));
+  document.querySelectorAll("input[data-cockpit]").forEach(x => x.checked = true);
+  document.querySelectorAll("input[data-site]").forEach(x => x.checked = true);
+  updateSelCount();
+};
+document.getElementById("btn-none").onclick = () => {
+  selected.clear();
+  document.querySelectorAll("input[data-cockpit],input[data-site]")
+          .forEach(x => x.checked = false);
+  updateSelCount();
+};
+
+(async () => {
+  await load();       // 先把表格渲染出来
+  await reattach();   // 再把正在跑的任务接回来（页面刷新不丢进度）
+  loadHealth();
+  setInterval(loadHealth, 10000);
+  loadWho();
+  loadAudit();
+  setInterval(loadAudit, 15000);
+})();
+</script>
+</body>
+</html>

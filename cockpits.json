@@ -1,0 +1,78 @@
+{
+  "upload_concurrency": 5,
+  "sites": [
+    {
+      "id": "xiwan",
+      "name": "西湾",
+      "region": "yulin",
+      "vpn": "xiwan-gonghuanyu.ovpn",
+      "note": "驾舱 192.168.11.12/.13；车辆 192.168.12.x（与金龙驾舱网段重叠）"
+    },
+    {
+      "id": "yankuang",
+      "name": "兖矿",
+      "region": "xinjiang",
+      "vpn": "yankuang-gonghuanyu.ovpn",
+      "note": "驾舱网段 192.168.18.0/24"
+    },
+    {
+      "id": "jianlong",
+      "name": "金龙",
+      "region": "chengde",
+      "vpn": "jianlong-gonghuanyu.ovpn",
+      "note": "驾舱网段 192.168.12.0/24；与西湾车辆网段重叠，两条 VPN 不能同时挂"
+    }
+  ],
+  "cockpits": [
+    {
+      "id": "xiwan_cockpit_1",
+      "name": "西湾驾舱1",
+      "site": "xiwan",
+      "host": "192.168.11.12",
+      "transport": "ssh",
+      "ssh_user": "breton",
+      "ssh_password_env": "XIWAN_SSH_PASSWORD",
+      "ipc_port": 19726
+    },
+    {
+      "id": "xiwan_cockpit_2",
+      "name": "西湾驾舱2",
+      "site": "xiwan",
+      "host": "192.168.11.13",
+      "transport": "ssh",
+      "ssh_user": "breton",
+      "ssh_password_env": "XIWAN_SSH_PASSWORD",
+      "ipc_port": 19726
+    },
+    {
+      "id": "yankuang_cockpit_1",
+      "name": "兖矿驾舱1",
+      "site": "yankuang",
+      "host": "192.168.18.232",
+      "transport": "ssh",
+      "ssh_user": "breton",
+      "ssh_password_env": "YANKUANG_SSH_PASSWORD",
+      "ipc_port": 19726
+    },
+    {
+      "id": "yankuang_cockpit_2",
+      "name": "兖矿驾舱2",
+      "site": "yankuang",
+      "host": "192.168.18.233",
+      "transport": "ssh",
+      "ssh_user": "breton",
+      "ssh_password_env": "YANKUANG_SSH_PASSWORD",
+      "ipc_port": 19726
+    },
+    {
+      "id": "jianlong_cockpit_1",
+      "name": "金龙驾舱1",
+      "site": "jianlong",
+      "host": "192.168.12.253",
+      "transport": "ssh",
+      "ssh_user": "breton",
+      "ssh_password_env": "JIANLONG_SSH_PASSWORD",
+      "ipc_port": 19726
+    }
+  ]
+}
