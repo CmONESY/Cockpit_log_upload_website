@@ -6,7 +6,7 @@
       "name": "西湾",
       "region": "yulin",
       "vpn": "xiwan-gonghuanyu.ovpn",
-      "note": "驾舱 192.168.11.12/.13；车辆 192.168.12.x（与金龙驾舱网段重叠）"
+      "note": "驾舱 192.168.11.12/.13；车辆 192.168.12.x（建龙 VPN 也推送该段，两条不能同时挂）"
     },
     {
       "id": "yankuang",
@@ -17,10 +17,10 @@
     },
     {
       "id": "jianlong",
-      "name": "金龙",
+      "name": "建龙",
       "region": "chengde",
       "vpn": "jianlong-gonghuanyu.ovpn",
-      "note": "驾舱网段 192.168.12.0/24；与西湾车辆网段重叠，两条 VPN 不能同时挂"
+      "note": "承德建龙驾舱 192.168.15.253；VPN 同时推送 10/11/12/15 段，与西湾网段有重叠，两条 VPN 不能同时挂"
     }
   ],
   "cockpits": [
@@ -66,9 +66,9 @@
     },
     {
       "id": "jianlong_cockpit_1",
-      "name": "金龙驾舱1",
+      "name": "建龙驾舱1",
       "site": "jianlong",
-      "host": "192.168.12.253",
+      "host": "192.168.15.253",
       "transport": "ssh",
       "ssh_user": "breton",
       "ssh_password_env": "JIANLONG_SSH_PASSWORD",

@@ -96,7 +96,7 @@ def detect_site_vpn(site_id, ovpn_hint, cockpit_hosts):
     tun_devs = sorted({dev for dev in devs.values()
                        if dev.startswith(("tun", "tap"))})
 
-    # 关键：多个矿区的内网网段会重叠（比如西湾车辆和金龙驾舱都是 192.168.12.x），
+    # 关键：多个矿区的内网网段会重叠（比如西湾车辆和建龙 VPN 都覆盖 192.168.12.x），
     # 所以"路由走 tun0"不能证明这个矿区就是当前挂的那个——别的矿区的隧道也会把
     # 同样的网段推过来，甚至能连到那边的另一台机器。以正在运行的 .ovpn 为准。
     if configs:
